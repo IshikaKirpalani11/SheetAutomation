@@ -43,6 +43,16 @@ def update_sheet():
         print(f"✅ Extracted table with {len(df)} rows and {len(df.columns)} columns.")
         print(df.head())
 
+        # -------------------------------
+        # ⭐ FIX: Split "No Code" → "No" + "Code"
+        # -------------------------------
+        if df.columns[0].strip().lower().replace(" ", "") == "nocode":
+            new_cols = ["No", "Code"]
+            # Split first column into 2
+            split_df = df.iloc[:, 0].str.split(" ", 1, expand=True)
+            df[new_cols] = split_df
+            df = df.drop(df.columns[0], axis=1)
+
         # Step 3 — Connect to Google Sheets
         print("Connecting to Google Sheets...")
         scope = [
@@ -50,7 +60,6 @@ def update_sheet():
             "https://www.googleapis.com/auth/drive"
         ]
 
-        # Use GitHub Secret for credentials
         credentials_info = os.environ.get("GOOGLE_CREDENTIALS")
         if not credentials_info:
             raise Exception("GOOGLE_CREDENTIALS secret not found!")
