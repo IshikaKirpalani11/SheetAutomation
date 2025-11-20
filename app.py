@@ -43,15 +43,18 @@ def update_sheet():
         print(f"✅ Extracted table with {len(df)} rows and {len(df.columns)} columns.")
         print(df.head())
 
+        # ⭐ Remove last 3 rows (totals)
+        df = df[:-3]
+        print("➡️ Removed last 3 rows (totals). New row count:", len(df))
+
         # --------------------------
         # ⭐ FIX "No Code" merged column
         # --------------------------
         first_col = df.columns[0].lower().replace(" ", "")
 
-        if first_col == "nocode":  
+        if first_col == "nocode":
             print("Fixing merged 'No Code' column...")
 
-            # Split the first column into 2 using modern Pandas syntax
             split_df = df.iloc[:, 0].str.split(" ", n=1, expand=True)
 
             df["No"] = split_df[0]
@@ -59,7 +62,6 @@ def update_sheet():
 
             df = df.drop(df.columns[0], axis=1)
 
-            # Move new columns to the beginning
             cols = ["No", "Code"] + [c for c in df.columns if c not in ["No", "Code"]]
             df = df[cols]
 
@@ -122,7 +124,6 @@ def update_sheet():
             ])
         except:
             pass
-
 
 
 if __name__ == "__main__":
