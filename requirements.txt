@@ -1,0 +1,6 @@
+tabula-py
+pandas
+gspread
+oauth2client
+schedule
+requests
