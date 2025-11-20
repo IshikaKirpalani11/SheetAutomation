@@ -2,13 +2,13 @@ import tabula
 import pandas as pd
 import gspread
 from oauth2client.service_account import ServiceAccountCredentials
-import schedule
-import time
 import requests
 import os
+import json
 from datetime import datetime
 import traceback
 
+# PDF info
 PDF_URL = "https://fimex.ae/downloads/providers/pdf/invoice/DA33MA19"
 PDF_FILE = "invoice.pdf"
 
@@ -49,11 +49,21 @@ def update_sheet():
             "https://spreadsheets.google.com/feeds",
             "https://www.googleapis.com/auth/drive"
         ]
-        creds = ServiceAccountCredentials.from_json_keyfile_name("credentials.json", scope)
+
+        # Use GitHub Secret for credentials
+        credentials_info = os.environ.get("GOOGLE_CREDENTIALS")
+        if not credentials_info:
+            raise Exception("GOOGLE_CREDENTIALS secret not found!")
+
+        creds_dict = json.loads(credentials_info)
+        creds = ServiceAccountCredentials.from_json_keyfile_dict(creds_dict, scope)
         client = gspread.authorize(creds)
 
-        sheet = client.open("Sheet1")       # Google Sheet FILE name
-        worksheet = sheet.worksheet("Sheet1")  # TAB inside the sheet
+        sheet = client.open("Sheet1")  # Google Sheet FILE name
+        try:
+            worksheet = sheet.worksheet("Sheet1")
+        except gspread.exceptions.WorksheetNotFound:
+            worksheet = sheet.add_worksheet(title="Sheet1", rows="100", cols="20")
 
         # Step 4 — Clean + Upload Data
         df = df.replace([float('inf'), float('-inf')], pd.NA)
@@ -69,7 +79,7 @@ def update_sheet():
         # Step 5 — Logging
         try:
             log_sheet = sheet.worksheet("Logs")
-        except:
+        except gspread.exceptions.WorksheetNotFound:
             log_sheet = sheet.add_worksheet(title="Logs", rows="100", cols="3")
             log_sheet.append_row(["Timestamp", "Status", "Rows Updated"])
 
@@ -92,11 +102,5 @@ def update_sheet():
             pass
 
 
-# Run every 1 minute
-schedule.every(1).minutes.do(update_sheet)
-
-print("⏳ Automation started... Updates every 1 minute.")
-
-update_sheet()  # first run
-
-update_sheet()
+if __name__ == "__main__":
+    update_sheet()
