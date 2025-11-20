@@ -35,7 +35,7 @@ def update_sheet():
             pages='1',
             multiple_tables=True,
             lattice=True,   # ← correct column detection
-            area=[140, 20, 715, 820],  # ← tuned for this exact PDF layout
+             area=[150, 20, 780, 580],
             java_options='-Djava.awt.headless=true'
         )
 
