@@ -27,12 +27,15 @@ def update_sheet():
 
         print("✅ PDF downloaded successfully.")
 
-        # Step 2 — Extract table using Tabula
+        # Step 2 — Extract table using Tabula (fixed)
         print("Extracting tables from PDF...")
+
         tables = tabula.read_pdf(
             PDF_FILE,
-            pages='all',
+            pages='1',
             multiple_tables=True,
+            lattice=True,   # ← correct column detection
+            area=[140, 20, 715, 820],  # ← tuned for this exact PDF layout
             java_options='-Djava.awt.headless=true'
         )
 
@@ -40,17 +43,21 @@ def update_sheet():
             raise Exception("No tables found in PDF")
 
         df = tables[0]
+
+        # ----- REMOVE TOTAL ROWS -----
+        df = df[~df.apply(lambda row: row.astype(str).str.contains("Total", case=False).any(), axis=1)]
+
         print(f"✅ Extracted table with {len(df)} rows and {len(df.columns)} columns.")
         print(df.head())
 
         # Step 3 — Connect to Google Sheets
         print("Connecting to Google Sheets...")
+
         scope = [
             "https://spreadsheets.google.com/feeds",
             "https://www.googleapis.com/auth/drive"
         ]
 
-        # Use GitHub Secret for credentials
         credentials_info = os.environ.get("GOOGLE_CREDENTIALS")
         if not credentials_info:
             raise Exception("GOOGLE_CREDENTIALS secret not found!")
@@ -59,7 +66,7 @@ def update_sheet():
         creds = ServiceAccountCredentials.from_json_keyfile_dict(creds_dict, scope)
         client = gspread.authorize(creds)
 
-        sheet = client.open("Sheet1")  # Google Sheet FILE name
+        sheet = client.open("Sheet1")
         try:
             worksheet = sheet.worksheet("Sheet1")
         except gspread.exceptions.WorksheetNotFound:
